@@ -207,12 +207,16 @@ int FT_convert(FILE* fp,unsigned char * string)
     return 0;
 }
 
-extern int create_bmp(uint32_t w,uint32_t h,uint8_t *buff);
-
 void FT_usage()
 {
     fprintf(stdout,"Usage: fthdr -f <font file> -s <font sting>\n\n");
 }
+
+#define BMP_TEST
+#ifdef BMP_TEST
+extern int create_bmp(uint32_t w,uint32_t h,uint8_t *buff);
+int set_font_color(unsigned int color);
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -250,6 +254,9 @@ int main(int argc, char* argv[])
     fp = FT_prealloc(len);
 
     FT_convert(fp,fontstring);
+
+#ifdef BMP_TEST
+
     int i =0, j=0,k;
     unsigned char *buff;
     unsigned int w=0, h=height;
@@ -276,7 +283,11 @@ int main(int argc, char* argv[])
         }
         pos_x += fbmp[k]->bitmap.pitch;
     }
+
+    set_font_color(0x7F2ABA);
     create_bmp( w, h, buff);
+    free(buff);
+#endif
 
     return 0;
 }

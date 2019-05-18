@@ -65,6 +65,19 @@ void destroy_bmp(unsigned char* ptr)
     free(ptr);
 }
 
+//using ARGB
+static unsigned int font_color = 0xFFFFFFFF;
+
+int set_font_color(unsigned int color)
+{
+    font_color = color;
+}
+
+#define COLOR_R ((font_color>>16)&0xFF)
+#define COLOR_G ((font_color>>8)&0xFF)
+#define COLOR_B (font_color&0xFF)
+
+
 int create_bmp(uint32_t w,uint32_t h,uint8_t *buff)
 {
     FILE *fd;
@@ -80,9 +93,17 @@ int create_bmp(uint32_t w,uint32_t h,uint8_t *buff)
     file_p = alloc_bmp_with_head(w,h); ;
     file_p_tmp = file_p;
     file_p_tmp += 54;
-    for(i=54;i<w*h*4;i++)
+    for( i = 54; i < w*h*4; i++)
     {
-        *file_p_tmp= *(buff+(i-54)/4);
+        if((i-54)%4==0)
+            *file_p_tmp = *(buff+(i-54)/4);
+        else if((i-54)%4==1)
+            *file_p_tmp = (*(buff+(i-54)/4))*COLOR_R>>8;
+        else if((i-54)%4==2)
+            *file_p_tmp = (*(buff+(i-54)/4))*COLOR_G>>8;
+        else
+            *file_p_tmp = (*(buff+(i-54)/4))*COLOR_B>>8;
+
         file_p_tmp++;
     }
     fd = fopen(file_name, "w");
