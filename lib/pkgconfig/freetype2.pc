@@ -1,0 +1,14 @@
+prefix=/home/fonthdr
+exec_prefix=/home/fonthdr
+libdir=/home/fonthdr/lib
+includedir=/home/fonthdr/include
+
+Name: FreeType 2
+URL: https://freetype.org
+Description: A free, high-quality, and portable font engine.
+Version: 23.0.17
+Requires:
+Requires.private: zlib
+Libs: -L${libdir} -lfreetype
+Libs.private: 
+Cflags: -I${includedir}/freetype2
