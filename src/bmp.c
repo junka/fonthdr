@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: BSD-3-Clause
+ * Copyright(c) 2018-2019 wan.junjie
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
