@@ -193,7 +193,7 @@ int FT_convert(FILE* fp,unsigned char * string)
     fputs("const int char_left[] = {\n",fp);
     for( i = 0; i < len; i++)
     {
-        sprintf(stt," %u,",fbmp[i]->left);
+        sprintf(stt," %d,",fbmp[i]->left);
         fputs(stt,fp);
     }
     fputs("\n};\n\n",fp);
@@ -215,7 +215,7 @@ void FT_usage()
 #define BMP_TEST
 #ifdef BMP_TEST
 extern int create_bmp(uint32_t w,uint32_t h,uint8_t *buff);
-int set_font_color(unsigned int color);
+int set_front_color(unsigned int color);
 #endif
 
 int main(int argc, char* argv[])
@@ -251,6 +251,9 @@ int main(int argc, char* argv[])
     FILE *fp;
     FT_tool_init(fontname);
     int len = strlen(fontstring);
+    if(len<=0)
+        return -1;
+
     fp = FT_prealloc(len);
 
     FT_convert(fp,fontstring);
@@ -264,27 +267,40 @@ int main(int argc, char* argv[])
     int pos_x = 0;
     int pos_y;
 
+    if(fbmp[0]->left<0)
+        w -= fbmp[0]->left;
+
     for(i=0; i<len; i++)
     {
         w += fbmp[i]->bitmap.pitch + fbmp[i]->left;
     }
+    w += 5;//add some space to right
 
     buff = calloc(w*h,1);
+
+    //in case character j with minus left starting in the first place
+    if(fbmp[0]->left<0)
+        pos_x -= fbmp[0]->left;
 
     for( k = 0; k < len; k++)
     {
         pos_x += fbmp[k]->left;
         pos_y = 2*height/3 - fbmp[k]->top ;
         //printf("top %d,posY %d, rows %d\n",fbmp[k]->top,pos_y,fbmp[k]->bitmap.rows);
+        
         for(i=0; i<fbmp[k]->bitmap.pitch; i++)
         {
             for(j=0; j< fbmp[k]->bitmap.rows; j++)
-                *(buff+pos_x+i+(j+pos_y)*w) = *(fbmp[k]->bitmap.buffer+i+j*(fbmp[k]->bitmap.pitch));
+            {
+                //avoid overlaping
+                if(*(buff+pos_x+i+(j+pos_y)*w) ==0)
+                    *(buff+pos_x+i+(j+pos_y)*w) = *(fbmp[k]->bitmap.buffer+i+j*(fbmp[k]->bitmap.pitch));
+            }
         }
         pos_x += fbmp[k]->bitmap.pitch;
     }
 
-    set_font_color(0x7F2ABA);
+    set_front_color(0x7F2ABA);
     create_bmp( w, h, buff);
     free(buff);
 #endif

@@ -66,16 +66,22 @@ void destroy_bmp(unsigned char* ptr)
 }
 
 //using ARGB
-static unsigned int font_color = 0xFFFFFFFF;
+static unsigned int front_color = 0xFFFFFFFF;
+static unsigned int back_color = 0xFFFFFFFF;
 
-int set_font_color(unsigned int color)
+int set_back_color(unsigned int color)
 {
-    font_color = color;
+	back_color = color;
 }
 
-#define COLOR_R ((font_color>>16)&0xFF)
-#define COLOR_G ((font_color>>8)&0xFF)
-#define COLOR_B (font_color&0xFF)
+int set_front_color(unsigned int color)
+{
+    front_color = color;
+}
+
+#define COLOR_R ((front_color>>16)&0xFF)
+#define COLOR_G ((front_color>>8)&0xFF)
+#define COLOR_B (front_color&0xFF)
 
 
 int create_bmp(uint32_t w,uint32_t h,uint8_t *buff)
@@ -85,7 +91,6 @@ int create_bmp(uint32_t w,uint32_t h,uint8_t *buff)
     long file_length =w*h*4+54;
     unsigned char *file_p = NULL;
     unsigned char *file_p_tmp = NULL;
-    unsigned char *byte_copy_p = NULL;
     unsigned char byte_copy = 0;
     int i = 0;
     file_name = "font.bmp";
@@ -95,14 +100,15 @@ int create_bmp(uint32_t w,uint32_t h,uint8_t *buff)
     file_p_tmp += 54;
     for( i = 54; i < w*h*4; i++)
     {
+        byte_copy = *(buff+(i-54)/4);
         if((i-54)%4==0)
-            *file_p_tmp = *(buff+(i-54)/4);
+            *file_p_tmp = byte_copy;
         else if((i-54)%4==1)
-            *file_p_tmp = (*(buff+(i-54)/4))*COLOR_R>>8;
+            *file_p_tmp = ((byte_copy)*COLOR_R>>8);//(byte_copy==0)?(((back_color>>16)&0xFF)):
         else if((i-54)%4==2)
-            *file_p_tmp = (*(buff+(i-54)/4))*COLOR_G>>8;
+            *file_p_tmp = ((byte_copy)*COLOR_G>>8);//(byte_copy==0)?(((back_color>>8)&0xFF)):
         else
-            *file_p_tmp = (*(buff+(i-54)/4))*COLOR_B>>8;
+            *file_p_tmp = ((byte_copy)*COLOR_B>>8);//(byte_copy==0)?(((back_color)&0xFF)):
 
         file_p_tmp++;
     }
