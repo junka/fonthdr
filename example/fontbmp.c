@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ftsrc.h"
+
 #pragma pack (push, 2)
 
 struct bmp_header {
@@ -29,6 +31,7 @@ struct bmp_header {
     uint32_t biClrUsed;
     uint32_t biClrImportant;
 };
+
 #pragma pack(pop)
 
 unsigned char* alloc_bmp_with_head(uint32_t w, uint32_t h)
@@ -39,10 +42,10 @@ unsigned char* alloc_bmp_with_head(uint32_t w, uint32_t h)
 
     bmp_p = (struct bmp_header *)d_ptr;
     bmp_p->file_type = 0x4D42;
-    bmp_p->file_size = 54 + w * h * 4;
+    bmp_p->file_size = sizeof(struct bmp_header) + w * h * 4;
     bmp_p->reserved1 = 0x0;
     bmp_p->reserved2 = 0x0;
-    bmp_p->offset = 0x36;
+    bmp_p->offset = sizeof(struct bmp_header);
 
     //bmp info head
     bmp_p->biSize = 0x28;
@@ -82,26 +85,28 @@ void set_front_color(unsigned int color)
 int create_bmp(uint32_t w, uint32_t h, uint8_t *buff)
 {
     FILE *fd;
-    long file_length = w*h*4+54;
+    long file_length = w * h * 4 + sizeof(struct bmp_header);
     unsigned char *file_p_tmp = NULL;
     unsigned char byte_copy = 0;
     const char *file_name = "font.bmp";
 
     unsigned char *file_p = alloc_bmp_with_head(w,h);
     file_p_tmp = file_p;
-    file_p_tmp += 54;
-    for (uint32_t i = 54; i < w * h * 4; i++) {
-        byte_copy = *(buff+(i-54)/4);
-        if((i-54)%4==0)
-            *file_p_tmp = byte_copy;
-        else if((i-54)%4==1)
-            *file_p_tmp = ((byte_copy)*COLOR_R>>8);
-        else if((i-54)%4==2)
-            *file_p_tmp = ((byte_copy)*COLOR_G>>8);
-        else
-            *file_p_tmp = ((byte_copy)*COLOR_B>>8);
+    file_p_tmp += sizeof(struct bmp_header);
+    for (uint32_t i = sizeof(struct bmp_header); i < w * h * 4; i++) {
+      byte_copy = *(buff + (i - sizeof(struct bmp_header)) / 4);
+      uint32_t offset = (i - sizeof(struct bmp_header)) % 4;
+      if (offset == 0) {
+        *file_p_tmp = byte_copy;
+      } else if (offset == 1) {
+        *file_p_tmp = ((byte_copy)*COLOR_R >> 8);
+      } else if (offset == 2) {
+        *file_p_tmp = ((byte_copy)*COLOR_G >> 8);
+      } else {
+        *file_p_tmp = ((byte_copy)*COLOR_B >> 8);
+      }
 
-        file_p_tmp++;
+      file_p_tmp++;
     }
     fd = fopen(file_name, "w");
     fwrite(file_p, file_length, 1,fd);
@@ -110,3 +115,51 @@ int create_bmp(uint32_t w, uint32_t h, uint8_t *buff)
     return (0);
 }
 
+int main(void) {
+  unsigned char *buff;
+  unsigned int w = 0, h = 0;
+
+  int pos_x = 0;
+  int pos_y;
+  int maxtop = 0;
+  int maxbottom = 0;
+
+  int count = NUM_OF_CHAR;
+
+  if (char_left[0] < 0)
+    w -= char_left[0];
+
+  for (int i = 0; i < count; i++) {
+    w += char_pitch[i] + char_left[i];
+    maxtop = char_top[i] > maxtop ? char_top[i] : maxtop;
+    maxbottom = (((int)(char_rows[i]) - char_top[i]) > maxbottom)
+                    ? ((int)(char_rows[i]) - char_top[i])
+                    : maxbottom;
+  }
+  // w += 4;//add some space to right
+  h = maxtop + maxbottom;
+  buff = calloc(w * h, 1);
+
+  if (char_left[0] < 0)
+    pos_x -= char_left[0];
+
+  for (int k = 0; k < count; k++) {
+    pos_x += char_left[k];
+    pos_y = maxtop - char_top[k];
+
+    for (int i = 0; i < char_pitch[k]; i++) {
+      for (uint32_t j = 0; j < char_rows[k]; j++) {
+        // avoid overlaping
+        if (*(buff + pos_x + i + (j + pos_y) * w) == 0) {
+          *(buff + pos_x + i + (j + pos_y) * w) =
+              *(char_code[k] + i + j * char_pitch[k]);
+        }
+      }
+    }
+    pos_x += char_pitch[k];
+  }
+
+  set_front_color(0x7F2ABA);
+  create_bmp(w, h, buff);
+  free(buff);
+}
