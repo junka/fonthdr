@@ -7,7 +7,7 @@ if(NOT FREETYPE_FOUND)
   message(FATAL_ERROR "FreeType2 library not found")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -g -O0 -fsanitize=address -fno-omit-frame-pointer -fsanitize-recover=address")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -g -O0")
 
 add_executable(fonthdr fttool.c)
 

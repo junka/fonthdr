@@ -222,7 +222,6 @@ static int FT_convert(FILE *fp, const unsigned char *str, FT_BitmapGlyph *fbmp) 
     fputs("#endif\n\n", fp);
     fputs("#endif /*_FTSRC_H_*/\n", fp);
 
-    fclose(fp);
     free(codes);
     return count;
 }
