@@ -7,7 +7,7 @@ if(NOT FREETYPE_FOUND)
   message(FATAL_ERROR "FreeType2 library not found")
 endif()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -g -O0")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -g -O0 -fsanitize=address -fno-omit-frame-pointer -fsanitize-recover=address")
 
 add_executable(fonthdr fttool.c)
 
@@ -27,6 +27,6 @@ add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/ftsrc.h"
     VERBATIM
 )
 
-add_custom_target(eheader ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/ftsrc.h")
+add_custom_target(headerfile ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/ftsrc.h")
 
 add_subdirectory(example)

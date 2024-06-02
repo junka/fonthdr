@@ -17,17 +17,8 @@
 #include FT_WINFONTS_H
 #include FT_BITMAP_H
 
-FT_Face pFTFace = NULL; 
-FT_Library pFTLib = NULL; 
-
-struct char_gly {
-    unsigned int rows;
-    unsigned int width;
-    int pitch;
-};
-
-int count=0;
-int height ;
+static FT_Face pFTFace = NULL; 
+static FT_Library pFTLib = NULL; 
 
 int FT_tool_init(const char* fontame)
 {
@@ -57,7 +48,7 @@ int FT_tool_init(const char* fontame)
     //printf("the face has %d glyphs\n", pFTFace->num_glyphs);
 
     FT_Set_Char_Size(pFTFace,0, 32*32, 400,400);
-    height = pFTFace->size->metrics.height/64 ;
+    // height = pFTFace->size->metrics.height/64 ;
     //printf("height %d\n",height);
 
     return 0;
@@ -97,8 +88,8 @@ static int FT_convert_code(FILE *fp, FT_BitmapGlyph fbmp) {
     for (uint32_t m = 0; m < bitmap->rows; ++m) {
         fputs("\t\t", fp);
         for (uint32_t n = 0; n < bitmap->width; ++n) {
-        sprintf(stt, "0x%02X,", bitmap->buffer[m * bitmap->width + n]);
-        fputs(stt, fp);
+            snprintf(stt, 12, "0x%02X,", bitmap->buffer[m * bitmap->width + n]);
+            fputs(stt, fp);
         }
         fputs("\n", fp);
     }
@@ -166,18 +157,18 @@ static int FT_convert(FILE *fp, const unsigned char *str, FT_BitmapGlyph *fbmp) 
     fputs("#ifdef __cplusplus\n", fp);
     fputs("extern \"C\" {\n", fp);
     fputs("#endif\n\n", fp);
-    sprintf(stt, "#define NUM_OF_CHAR (%d)\n\n", count);
+    snprintf(stt, 128, "#define NUM_OF_CHAR (%d)\n\n", count);
     fputs(stt, fp);
-    fputs("const unsigned int char_height = ", fp);
-    sprintf(stt, "%u;\n\n", height);
-    fputs(stt, fp);
+    // fputs("const unsigned int char_height = ", fp);
+    // sprintf(stt, "%u;\n\n", height);
+    // fputs(stt, fp);
     for (i = 0; i < count; i++) {
         FT_load_code(codes[i], fbmp, i);
         maxsize = fbmp[i]->bitmap.rows * fbmp[i]->bitmap.width > maxsize
                     ? fbmp[i]->bitmap.rows * fbmp[i]->bitmap.width
                     : maxsize;
     }
-    sprintf(stt, "const unsigned char char_code[NUM_OF_CHAR][%d] = {\n",
+    snprintf(stt, 128, "const unsigned char char_code[NUM_OF_CHAR][%d] = {\n",
             maxsize);
     fputs(stt, fp);
     for (i = 0; i < count; i++) {
@@ -186,42 +177,42 @@ static int FT_convert(FILE *fp, const unsigned char *str, FT_BitmapGlyph *fbmp) 
     fputs("};\n\n", fp);
     fputs("/*", fp);
     for (i = 0; i < count; i++) {
-        sprintf(stt, " %c,", codes[i]);
+        snprintf(stt, 128, " %c,", codes[i]);
         fputs(stt, fp);
     }
     fputs("*/\n\n", fp);
 
     fputs("const unsigned int char_rows[NUM_OF_CHAR] = {\n", fp);
     for (i = 0; i < count; i++) {
-        sprintf(stt, " %u,", fbmp[i]->bitmap.rows);
+        snprintf(stt, 128, " %u,", fbmp[i]->bitmap.rows);
         fputs(stt, fp);
     }
     fputs("\n};\n\n", fp);
 
     fputs("const unsigned int char_width[NUM_OF_CHAR] = {\n", fp);
     for (i = 0; i < count; i++) {
-        sprintf(stt, " %u,", fbmp[i]->bitmap.width);
+        snprintf(stt, 128, " %u,", fbmp[i]->bitmap.width);
         fputs(stt, fp);
     }
     fputs("\n};\n\n", fp);
 
     fputs("const int char_pitch[NUM_OF_CHAR] = {\n", fp);
     for (i = 0; i < count; i++) {
-        sprintf(stt, " %u,", fbmp[i]->bitmap.pitch);
+        snprintf(stt, 128, " %u,", fbmp[i]->bitmap.pitch);
         fputs(stt, fp);
     }
     fputs("\n};\n\n", fp);
 
     fputs("const int char_top[NUM_OF_CHAR] = {\n", fp);
     for (i = 0; i < count; i++) {
-        sprintf(stt, " %u,", fbmp[i]->top);
+        snprintf(stt, 128, " %u,", fbmp[i]->top);
         fputs(stt, fp);
     }
     fputs("\n};\n\n", fp);
 
     fputs("const int char_left[NUM_OF_CHAR] = {\n", fp);
     for (i = 0; i < count; i++) {
-        sprintf(stt, " %d,", fbmp[i]->left);
+        snprintf(stt, 128, " %d,", fbmp[i]->left);
         fputs(stt, fp);
     }
     fputs("\n};\n\n", fp);
@@ -251,6 +242,7 @@ int main(int argc, char* argv[])
     int opt;
     char fontname[1024];
     char *fontstring = NULL;
+    int ret = 0;
     while ((opt = getopt( argc, argv, "f:s:")) != EOF) {
         switch(opt){
         case 'f':
@@ -280,12 +272,16 @@ int main(int argc, char* argv[])
 
     int count = FT_convert(fp, (const unsigned char *)fontstring, fbmp);
     if (count == 0) {
-        fclose(fp);
-        free(fbmp);
-        return -1;
+        ret = -1;
+        goto exit;
     }
-
+exit:
     fclose(fp);
+    for (int c = 0; c < count; c++) {
+        FT_Done_Glyph((FT_Glyph)fbmp[c]);
+    }
     free(fbmp);
-    return 0;
+    FT_Done_Face(pFTFace);
+    FT_Done_FreeType(pFTLib);
+    return ret;
 }
